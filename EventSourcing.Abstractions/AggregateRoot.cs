@@ -11,14 +11,29 @@ namespace EventSourcing.Abstractions
         public T UniqueID { get; set; }
         public int Version { get; set; }
 
-        public Task CommitChanges()
+        private EventCenter mailbox;
+
+        public AggregateRoot()
         {
-            throw new NotImplementedException();
-        }
+            Task.Run(async() => { mailbox = new EventCenter(); await mailbox.Initialize(this); });
+        }        
 
         public string ID()
         {
             return UniqueID.ToString();
-        }        
+        }
+
+        public Task RaiseEvent(IDomainEvent evt)
+        {
+            evt.AggregateRootId = this.ID();
+            evt.Version = this.Version + 1;
+            evt.UtcTimestamp = DateTime.Now.ToUniversalTime();
+            return mailbox.WriteEvent(evt);
+        }
+
+        public Task ReplayEvents()
+        {           
+            return mailbox.ReplayEvents();
+        }
     }
 }

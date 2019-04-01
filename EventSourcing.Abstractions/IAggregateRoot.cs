@@ -8,10 +8,11 @@ namespace EventSourcing.Abstractions
 {
     public interface IAggregateRoot
     {
-        string ID();
         int Version { get; set; }
+
+        string ID();        
         
-        Task CommitChanges();
+        Task RaiseEvent(IDomainEvent evt);
     }
 
     public interface IAggregateRoot<T> : IAggregateRoot

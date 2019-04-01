@@ -41,7 +41,7 @@ namespace EventSourcing.Abstractions
             else
                 throw new ArgumentNullException(nameof(configSection), "no event store provider in config");
         }
-        public static IEventStoreProvider GetProvider<T>() where T : IDomainService
+        public static IEventStoreProvider GetProvider<T>()
         {
             return GetProvider(typeof(T));
         }

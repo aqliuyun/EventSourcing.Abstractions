@@ -14,7 +14,7 @@ namespace EventSourcing.Abstractions
         public DateTime UtcTimestamp { get; set; }
         public int Version { get; set; }
 
-        public virtual void Apply<T>(T state)
+        public virtual void Apply(object state)
         {
             throw new NotImplementedException();
         }

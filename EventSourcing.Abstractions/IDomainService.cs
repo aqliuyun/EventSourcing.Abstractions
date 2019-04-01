@@ -8,9 +8,6 @@ namespace EventSourcing.Abstractions
 {
     public interface IDomainService
     {
-        IAggregateRoot AggregateRoot { get; }
-
-        Task ReplayEvents();
+        IAggregateRootRepository repo { get; }
     }
-    
 }

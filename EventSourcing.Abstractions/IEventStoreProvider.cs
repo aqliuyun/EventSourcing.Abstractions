@@ -10,6 +10,6 @@ namespace EventSourcing.Abstractions
     {
         Task Initialize(EventStoreProviderSetting settings);
 
-        Task<IEventStore> Create<T>() where T : IDomainService;
+        IEventStore GetStorage();
     }
 }

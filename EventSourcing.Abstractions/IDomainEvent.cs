@@ -13,6 +13,6 @@ namespace EventSourcing.Abstractions
         int Version { get; set; }
         DateTime UtcTimestamp { get; set; }
 
-        void Apply<T>(T state);
+        void Apply(object state);
     }
 }

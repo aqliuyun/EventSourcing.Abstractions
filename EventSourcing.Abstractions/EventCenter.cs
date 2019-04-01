@@ -6,30 +6,22 @@ using System.Threading.Tasks;
 
 namespace EventSourcing.Abstractions
 {
-    public class EventCenter<T> where T : IAggregateRoot
-    {
-        private static readonly IEventStoreProvider EventStoreProvider = EventStoreManager.GetProvider<IDomainService>();
+    public class EventCenter
+    {        
         private long _afterSnapshotsEventCount;
-        private IDomainService _service;
         private IEventStore _eventStore;
+        private IAggregateRoot _aggregateRoot;
+        private IAggregateRootStore _aggregateStore;
+        public EventCenter() { }
 
-        private T State
-        {
-            get
+        public async Task<EventCenter> Initialize(IAggregateRoot root, long afterSnapshotsEventCount = 100)
+        {            
+            var instance = new EventCenter
             {
-                return (T)this._service.AggregateRoot;
-            }
-        }
-
-        private EventCenter() { }
-
-        public static async Task<EventCenter<T>> Initialize(IDomainService service, long afterSnapshotsEventCount = 100)
-        {
-            var instance = new EventCenter<T>
-            {
-                _service = service,
+                _aggregateRoot = root,
                 _afterSnapshotsEventCount = afterSnapshotsEventCount,
-                _eventStore = await EventStoreProvider.Create<IDomainService>()
+                _eventStore = EventStoreManager.GetProvider(this._aggregateRoot.GetType()).GetStorage(),
+                _aggregateStore = AggregateRootStoreManager.GetProvider(this._aggregateRoot.GetType()).GetStorage()
             };
 
             return instance;
@@ -47,7 +39,7 @@ namespace EventSourcing.Abstractions
 
                 else if (writeResult == EventWriteResult.Duplicate)
                 {
-                    evt = await this._eventStore.ReadOneAsync(this._service.AggregateRoot.ID(), evt.CommandId);
+                    evt = await this._eventStore.ReadOneAsync(this._aggregateRoot.ID(), evt.CommandId);
                 }
 
                 else
@@ -68,12 +60,12 @@ namespace EventSourcing.Abstractions
 
         private Task WriteSnapshot()
         {
-            return this._service.AggregateRoot.CommitChanges();
+            return _aggregateStore.Save(this._aggregateRoot);
         }
 
         public async Task ReplayEvents()
         {
-            var events = await this._eventStore.ReadFromAsync(this._service.AggregateRoot.ID(), this._service.AggregateRoot.Version + 1);
+            var events = await this._eventStore.ReadFromAsync(this._aggregateRoot.ID(), this._aggregateRoot.Version + 1);
 
             if (events.Any())
             {
@@ -89,13 +81,13 @@ namespace EventSourcing.Abstractions
         private void HandleEvent(IDomainEvent evt)
         {
             VerifyEvent(evt);
-            evt.Apply(this.State);
-            this.State.Version = evt.Version;
+            evt.Apply(this._aggregateRoot);
+            this._aggregateRoot.Version = evt.Version;
         }
 
         private void VerifyEvent(IDomainEvent evt)
         {
-            if (evt.Version != this.State.Version + 1)
+            if (evt.Version != this._aggregateRoot.Version + 1)
             {
                 throw new Exception($"invlid event version for [{evt.GetType().FullName}] of [{this.GetType().FullName}]");
             }
